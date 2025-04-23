@@ -1,22 +1,7 @@
 #include "../includes/Frame.hpp"
 
-// Function to interpolate between two slices
-void interpolateSlices(const cv::Mat& slice1, const cv::Mat& slice2, 
-                       std::vector<cv::Mat>& processedSlices, int numInterpolations) {
-    // Ensure the two slices have the same size and type
-    if (slice1.size() != slice2.size() || slice1.type() != slice2.type()) {
-        throw std::invalid_argument("Slices must have the same size and type for interpolation!");
-    }
 
-    // Perform interpolation
-    for (int i = 1; i <= numInterpolations; ++i) {
-        double t = static_cast<double>(i) / (numInterpolations + 1);
-        cv::Mat interpolatedSlice = (1.0 - t) * slice1 + t * slice2;
-        processedSlices.push_back(interpolatedSlice);
-    }
-}
-
-Frame::Frame(const std::vector<cv::Mat> &realFrame, const SimulationConfig &simulationConfig, const std::vector<Sphere> &cells,
+Frame::Frame(const std::vector<cv::Mat> &realFrame, const SimulationConfig &simulationConfig, const std::vector<Spheroid> &cells,
              const Path &outputPath, const std::string &imageName)
     : cells(cells),
       simulationConfig(simulationConfig),
@@ -35,8 +20,6 @@ Frame::Frame(const std::vector<cv::Mat> &realFrame, const SimulationConfig &simu
     // TODO: Fix padding
     //    padRealImage();
     _synthFrame = generateSynthFrame();
-    //std::cout << " SYNTH FRAME SIZE: " << _synthFrame.size();
-
 }
 
 void Frame::padRealFrame()
@@ -63,24 +46,15 @@ std::vector<cv::Mat> Frame::generateSynthFrame()
 
     cv::Size shape = getImageShape(); // Assuming getImageShape returns a cv::Size
     std::vector<cv::Mat> frame;
-    unsigned int x = 0;
+
     for (double z : z_slices)
     {
         Image synthImage = cv::Mat(shape, CV_32F, cv::Scalar(simulationConfig.background_color)); // Assuming background color is in cv::Scalar format
+
         for (const auto &cell : cells)
         {
             cell.draw(synthImage, simulationConfig, nullptr, z);
         }
-        // if(!frame.empty() && x > 0)
-        // {
-        //     unsigned num_interpolated_slices = 7;
-        //     std::vector<cv::Mat> interSlices{interpolateSlices(frame.front(), synthImage, num_interpolated_slices)};
-        //     for (unsigned i = 0; i < num_interpolated_slices; ++i)
-        //     {
-        //         frame.push_back(interSlices[i]);
-        //     }
-        // }
-        x += 1;
         frame.push_back(synthImage);
     }
     return frame;
@@ -99,8 +73,7 @@ Cost Frame::calculateCost(const std::vector<cv::Mat> &synthFrame)
 {
     if (_realFrame.size() != synthFrame.size())
     {
-        //throw std::runtime_error("Mismatch in image stack sizes");
-        std::cerr << " real frame size " << _realFrame.size() << " synth frame size " << synthFrame.size();
+        throw std::runtime_error("Mismatch in image stack sizes");
     }
 
     double totalCost = 0.0;
@@ -111,7 +84,7 @@ Cost Frame::calculateCost(const std::vector<cv::Mat> &synthFrame)
     return totalCost;
 }
 
-std::vector<cv::Mat> Frame::generateSynthFrameFast(Sphere &oldCell, Sphere &newCell)
+std::vector<cv::Mat> Frame::generateSynthFrameFast(Spheroid &oldCell, Spheroid &newCell)
 {
     if (cells.empty())
     {
@@ -128,7 +101,6 @@ std::vector<cv::Mat> Frame::generateSynthFrameFast(Sphere &oldCell, Sphere &newC
 
     // preallocate space to avoid reallocation
     synthFrame.reserve(z_slices.size());
-    
     for (size_t i = 0; i < z_slices.size(); ++i)
     {
         double z = z_slices[i];
@@ -153,95 +125,59 @@ std::vector<cv::Mat> Frame::generateSynthFrameFast(Sphere &oldCell, Sphere &newC
     return synthFrame;
 }
 
-/**
- * Generates a vector of output frames with outlines drawn around cells.
- * 
- * This function processes a series of grayscale 3D TIFF image slices (_realFrame) by:
- * 1. Converting each grayscale image to an RGB image.
- * 2. Drawing outlines for detected cells on the respective slice.
- * 3. Ensuring the output frames are converted to 8-bit images if necessary.
- * 
- * @return A std::vector<cv::Mat> containing the processed RGB frames with cell outlines.
- */
 std::vector<cv::Mat> Frame::generateOutputFrame()
 {
-    // Vector to store the processed output frames with outlines
     std::vector<cv::Mat> realFrameWithOutlines;
 
-    // Loop through each slice (image) in the 3D TIFF volume
     for (size_t i = 0; i < _realFrame.size(); ++i)
     {
-        const cv::Mat &realImage = _realFrame[i]; // Get the current grayscale image slice
-        double z = z_slices[i]; // Get the corresponding z-coordinate for the slice
+        const cv::Mat &realImage = _realFrame[i];
+        double z = z_slices[i];
 
-        // Step 1: Convert the grayscale image to an RGB image
+        // Convert grayscale to RGB
         cv::Mat outputFrame;
         cv::cvtColor(realImage, outputFrame, cv::COLOR_GRAY2BGR);
 
-        // Step 2: Draw outlines for detected cells on the RGB image
+        // Draw outlines for each cell
         for (const auto &cell : cells)
         {
-            // Draw the outline of the cell on the image.
-            // Passes the z-coordinate of the current slice for 3D context.
-            cell.drawOutline(outputFrame, 0, z);
+            cell.drawOutline(outputFrame, 0, z); // Assuming drawOutline takes a cv::Scalar for color
         }
 
-        // Step 3: Ensure the output frame is an 8-bit image
-        // If the image is not already 8-bit, convert it to 8-bit with appropriate scaling
+        // Convert to 8-bit image if necessary
         if (outputFrame.depth() != CV_8U)
         {
             outputFrame.convertTo(outputFrame, CV_8U, 255.0);
         }
 
-        // Add the processed frame to the result vector
         realFrameWithOutlines.push_back(outputFrame);
     }
 
-    // Return the vector of processed frames
     return realFrameWithOutlines;
 }
 
-/**
- * Generates a vector of output synthetic frames, ensuring all images are 8-bit.
- * 
- * This function processes synthetic images stored in `_synthFrame` by:
- * 1. Checking each image's depth.
- * 2. Converting images to 8-bit format if necessary, with appropriate scaling.
- * 3. Returning a vector of converted or cloned images.
- * 
- * @return A std::vector<cv::Mat> containing 8-bit synthetic image frames.
- */
 std::vector<cv::Mat> Frame::generateOutputSynthFrame()
 {
-    // Vector to store the processed synthetic frames
     std::vector<cv::Mat> outputSynthFrame;
 
-    // Loop through each synthetic image in `_synthFrame`
     for (const auto &synthImage : _synthFrame)
     {
-        cv::Mat outputImage; // Placeholder for the processed image
-
-        // Step 1: Check if the image is already 8-bit
+        cv::Mat outputImage;
         if (synthImage.depth() != CV_8U)
         {
-            // Step 2: Convert to 8-bit if necessary
-            // Scale pixel values by 255.0 to map the original range to 8-bit
+            // Convert to 8-bit image if necessary, scaling pixel values by 255
             synthImage.convertTo(outputImage, CV_8U, 255.0);
         }
         else
         {
-            // Step 3: If already 8-bit, clone the image to avoid modifying the original
             outputImage = synthImage.clone();
         }
 
-        // Add the processed image to the output vector
         outputSynthFrame.push_back(outputImage);
     }
 
-    // Return the vector of processed synthetic frames
     return outputSynthFrame;
 }
-
 
 // size_t Frame::length() const
 // {
@@ -262,7 +198,7 @@ CostCallbackPair Frame::perturb()
     size_t index = distrib(gen);
 
     // Store old cell // no reference
-    Sphere oldCell = cells[index];
+    Spheroid oldCell = cells[index];
 
     // Replace the cell at that index with a new cell
     cells[index] = cells[index].getPerturbedCell();
@@ -282,6 +218,7 @@ CostCallbackPair Frame::perturb()
 
     // If the difference is greater than the threshold, revert to the old cell
     double oldCost = calculateCost(_synthFrame);
+
     CallBackFunc callback = [this, newSynthFrame, oldCell, index](bool accept)
     {
         if (accept)
@@ -295,13 +232,14 @@ CostCallbackPair Frame::perturb()
     };
     if (newCost - oldCost < 0){
         std::cout << " New Residual Accepted: " << newCost << std::endl;
+    } else {
+        std::cout << "Residual Too High: " << newCost << std::endl;
     }
     return {newCost - oldCost, callback};
 }
 
 CostCallbackPair Frame::split()
 {
-    // std::cout << " real " << _realFrame.size() << " synth " << _synthFrame.size();
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib(0, cells.size() - 1);
@@ -310,7 +248,7 @@ CostCallbackPair Frame::split()
     size_t index = distrib(gen);
 
     // Store old cell
-    Sphere oldCell = cells[index];
+    Spheroid oldCell = cells[index];
 
     // Emilio + Atif: here is where you want to call a function that creates the bounding 3D rectangle, calls OpenCV PCA,
     // and returns the 3 Eigenvalues + 3rd Eigenvector. Call it "CellPCA". Once that's working, we'll decide what to do
@@ -318,8 +256,8 @@ CostCallbackPair Frame::split()
     // attempt a split, we'll return (I think) the same value as below under if(!valid).
 
     // Replace the cell at that index with new cells
-    Sphere child1;
-    Sphere child2;
+    Spheroid child1;
+    Spheroid child2;
     bool valid;
     //     std::tie(child1, child2, valid) = oldCell.getSplitCells();
     std::tie(child1, child2, valid) = oldCell.getSplitCells(_realFrame);
@@ -330,10 +268,12 @@ CostCallbackPair Frame::split()
 
     cells.erase(cells.begin() + index);
     cells.push_back(child1);
+    cells.push_back(child2);
 
     bool areCellsValid = oldCell.checkIfCellsValid(cells);
     if (!areCellsValid)
     {
+        cells.pop_back();
         cells.pop_back();
         cells.insert(cells.begin() + index, oldCell);
         return {0.0, [](bool accept) {}};
@@ -366,8 +306,8 @@ Cost Frame::costOfPerturb(const std::string &perturbParam, float perturbVal, siz
     perturbParams[perturbParam] = perturbVal;
 
     // Perturb cell
-    Sphere perturbedCell = cells[index].getParameterizedCell(perturbParams);
-    Sphere originalCell = cells[index]; // Store the original cell
+    Spheroid perturbedCell = cells[index].getParameterizedCell(perturbParams);
+    Spheroid originalCell = cells[index]; // Store the original cell
     cells[index] = perturbedCell;       // Replace with the perturbed cell
 
     // Generate new image stack and get new cost
@@ -399,8 +339,8 @@ Frame::getSynthPerturbedCells(
         std::unordered_map<std::string, float> perturbParams;
         perturbParams[param] = perturbLength;
 
-        Sphere perturbedCell = cells[index].getParameterizedCell(perturbParams);
-        Sphere originalCell = cells[index]; // Store the original cell
+        Spheroid perturbedCell = cells[index].getParameterizedCell(perturbParams);
+        Spheroid originalCell = cells[index]; // Store the original cell
         cells[index] = perturbedCell;       // Replace with the perturbed cell
 
         perturbedCells[param] = generateSynthFrame();

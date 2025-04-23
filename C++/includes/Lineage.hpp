@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <fstream>
 #include "Sphere.hpp"
+#include "Spheroid.hpp"
 
 namespace fs = std::filesystem;
 
@@ -25,11 +26,11 @@ std::vector<cv::Mat> loadFrame(const std::string &imageFile, const BaseConfig &c
 class Lineage
 {
 public:
-   Lineage(std::map<std::string, std::vector<Sphere>> initialCells, PathVec imagePaths, BaseConfig &config, std::string outputPath, int continueFrom = -1);
+   Lineage(std::map<std::string, std::vector<Spheroid>> initialCells, PathVec imagePaths, BaseConfig &config, std::string outputPath, int continueFrom = -1);
 
    void optimize(int frameIndex);
 
-   void saveFrame(int frameIndex);
+   void saveImages(int frameIndex);
 
    void saveCells(int frameIndex);
 

@@ -115,8 +115,6 @@ public:
     PerturbParams radius{};
     double minRadius{};
     double maxRadius{};
-    double boundingBoxScale{1.5};
-
     ~SphereConfig() = default;
 
     void explodeConfig(const YAML::Node& node) override
@@ -127,24 +125,48 @@ public:
         radius.explodeParams(node["radius"]);
         minRadius = node["minRadius"].as<double>();
         maxRadius = node["maxRadius"].as<double>();
+    }
+};
 
-        if (node["boundingBoxScale"]) {
-            boundingBoxScale = node["boundingBoxScale"].as<double>();
-        }
+class SpheroidConfig: public CellConfig {
+public:
+    PerturbParams x{};
+    PerturbParams y{};
+    PerturbParams z{};
+    PerturbParams majorRadius{};
+    PerturbParams minorRadius{};
+    double minMajorRadius{};
+    double maxMajorRadius{};
+    double minMinorRadius{};
+    double maxMinorRadius{};
+    ~SpheroidConfig() = default;
+
+    void explodeConfig(const YAML::Node& node) override
+    {
+        x.explodeParams(node["x"]);
+        y.explodeParams(node["y"]);
+        z.explodeParams(node["z"]);
+        majorRadius.explodeParams(node["majorRadius"]);
+        minorRadius.explodeParams(node["minorRadius"]);
+        
+        minMajorRadius = node["minMajorRadius"].as<double>();
+        maxMajorRadius = node["maxMajorRadius"].as<double>();
+        minMinorRadius = node["minMinorRadius"].as<double>();
+        maxMinorRadius = node["maxMinorRadius"].as<double>();
     }
 };
 
 class BaseConfig {
 public:
     std::string cellType;
-    SphereConfig* cell;
+    SpheroidConfig* cell;
     SimulationConfig simulation;
     ProbabilityConfig prob;
     BaseConfig() :cell(nullptr) {};
     BaseConfig& operator=(const BaseConfig& other) {
         if (this != &other) {
             if (other.cell != nullptr) {
-                cell = new SphereConfig(*other.cell);
+                cell = new SpheroidConfig(*other.cell);
             }
             else {
                 cell = nullptr;
@@ -156,7 +178,7 @@ public:
     }
     BaseConfig(const BaseConfig& other) {
         if (other.cell != nullptr) {
-            cell = new SphereConfig(*other.cell);
+            cell = new SpheroidConfig(*other.cell);
         }
         else {
             cell = nullptr;
@@ -170,8 +192,8 @@ public:
     // load the BaseConfig with a YAML node
     void explodeConfig(const YAML::Node& node) {
         cellType = node["cellType"].as<std::string>();
-        // TODO: Now cell is always pointing to a sphere config, make it more dynamic later
-        cell = new SphereConfig;
+        // TODO: Now cell is always pointing to a spheroid config, make it more dynamic later
+        cell = new SpheroidConfig;
         cell->explodeConfig(node["cell"]);
         simulation.explodeConfig(node["simulation"]);
         prob.explodeConfig(node["prob"]);

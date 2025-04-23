@@ -4,7 +4,10 @@ CellFactory::CellFactory(const BaseConfig &config) {
     std::string cellType = config.cellType;
     // TODO: add more else if branches for more cell Types
     if (cellType == "sphere") {
-        Sphere::cellConfig = *config.cell;
+        // Sphere::cellConfig = *config.cell; // this is ideal, but entire code base must be changed to run it this way
+        Spheroid::cellConfig = *config.cell;
+    } if (cellType == "spheroid") {
+        Spheroid::cellConfig = *config.cell;
     }
     else {
         throw std::invalid_argument("Invalid cell type: " + config.cellType);
@@ -12,15 +15,15 @@ CellFactory::CellFactory(const BaseConfig &config) {
 }
 
 // TODO: use abstract base class in the future to handle different cell types
-std::map<Path, std::vector<Sphere>> CellFactory::createCells(const Path &init_params_path, int z_offset, float z_scaling) {
+std::map<Path, std::vector<Spheroid>> CellFactory::createCells(const Path &init_params_path, int z_offset, float z_scaling) {
     std::ifstream file(init_params_path);
     std::string line;
     std::string firstLine;
     std::getline(file, firstLine); // remove the header
-    std::map<Path, std::vector<Sphere>> initialCells;
+    std::map<Path, std::vector<Spheroid>> initialCells;
     while (std::getline(file, line)) {
         std::istringstream ss(line);
-        float x, y, z, radius;
+        float x, y, z, majorRadius, minorRadius;
         std::string floatStr;
         std::string filePath;
         std::string cellName;
@@ -34,11 +37,12 @@ std::map<Path, std::vector<Sphere>> CellFactory::createCells(const Path &init_pa
         std::getline(ss, floatStr, ',');
         z = std::stof(floatStr);
         std::getline(ss, floatStr, ',');
-        radius = std::stof(floatStr);
+        majorRadius = std::stof(floatStr);
+        minorRadius = std::stof(floatStr);
         z -= z_offset;
         z *= z_scaling;
-        Sphere::paramClass = SphereParams(cellName, x, y, z, radius);
-        initialCells[filePath].push_back(Sphere(SphereParams(cellName, x, y, z, radius)));
+        Spheroid::paramClass = SpheroidParams(cellName, x, y, z, majorRadius, minorRadius);
+        initialCells[filePath].push_back(Spheroid(Spheroid::paramClass));
         continue;
     }
     return initialCells;
