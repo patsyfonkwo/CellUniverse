@@ -249,11 +249,13 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
 
     if ((currentShape[0] <= 0) || (currentShape[1] <= 0))
     {
+        std::cout << "cell not found" << std::endl; // this keeps on executing (draws when commented out)
         return; // cell doesn't exist or unseen by algorithm
     }
 
     if ((currentShape[2] < 0) || (currentShape[3] < 0) || (currentShape[2] >= 517) || (currentShape[3] >= 422))
     {
+        std::cout << "cell not in frame" << std::endl; // this doesn't execute
         return; // x and y values not on the piture
     }
 
@@ -262,16 +264,32 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
     int y_offset = get_center().y;
     int z_offset = get_center().z;
 
-    cv::Scalar color(255, 255, 255); // white color
+    x_offset = 0;
+    y_offset = 0;
+    z_offset = 0;
+
     // int matrix_offset = get_matrix_size() / 2;
     
-    for (int i=0; (i+x_offset < 517); ++i){
-        for (int j=0; (j+y_offset < 422); ++j){
+    for (int i=0; (i+x_offset < image.cols); ++i){
+        for (int j=0; (j+y_offset < image.rows); ++j){
             if (paintPixelUpright(i-x_offset, j-y_offset, (int)z - z_offset)){
-                image.at<cv::Vec3b>(i+x_offset, j+y_offset) = cv::Vec3b(255, 255, 255);
+                // image.at<cv::Vec3b>(i+x_offset, j+y_offset) = cv::Vec3b(255, 255, 255);
+                image.at<float>(j+y_offset, i+x_offset) = simulationConfig.cell_color; 
             }
+            // image.at<float>(j+y_offset, i+x_offset) = 0.0f; // simulationConfig.cell_color;
         }
     }
+    // if (image.empty())
+    //     std::cout << "empty" << std::endl;
+    // std::cout << "Image Columns: " << image.cols << std::endl;
+    // std::cout << "Image Rows: " << image.rows << std::endl;
+    // std::cout << "Image Size: " << image.size() << std::endl;
+
+    // for (int i=0; (i < image.rows); ++i){
+    //     for (int j=0; (j < image.cols); ++j){
+    //         image.at<float>(i, j) = 0.0f;
+    //     }
+    // }
 
     // // float background_color = simulationConfig.background_color;
     // // float cell_color = simulationConfig.cell_color;
@@ -302,15 +320,22 @@ void Spheroid::drawOutline(cv::Mat &image, float color, float z) const {
     cv::Vec3b color_vec(255, 255, 255); // White color
     // int matrix_offset = get_matrix_size() / 2;
     
-    for (int i=0; (i+x_offset < 517); ++i){
-        for (int j=0; (j+y_offset < 422); ++j){
-            if (paintPixelRotated(i-x_offset, j-y_offset, (int)z - z_offset)){
-                image.at<cv::Vec3b>(i + x_offset, j + y_offset) = color_vec;
-                // cv::Vec3b* pixel = this->tiff_slices[k+z_offset].ptr<cv::Vec3b>(j+y_offset) + i+x_offset;
-                // *pixel = cv::Vec3b(color);
-            }
-        }
-    }
+    // for (int i=0; (i+x_offset < image.size().width); ++i){
+    //     for (int j=0; (j+y_offset < image.size().height); ++j){
+    //         if (paintPixelUpright(i-x_offset, j-y_offset, z - z_offset)){
+    //             // image.at<cv::Vec3b>(i + x_offset, j + y_offset) = cv::Vec3b(0, 0, 0);
+    //             // image.at<float>(i + x_offset, j + y_offset) = 0;
+    //             // cv::Vec3b* pixel = this->tiff_slices[k+z_offset].ptr<cv::Vec3b>(j+y_offset) + i+x_offset;
+    //             // *pixel = cv::Vec3b(color);
+    //         }
+    //         image.at<cv::Vec3b>(i + x_offset, j + y_offset) = color_vec;
+    //     }
+    // }
+    // for (int i=0; (i < 517); ++i){
+    //     for (int j=0; (j < 422); ++j){
+    //         image.at<cv::Vec3b>(i, j) = color_vec; // simulationConfig.cell_color;
+    //     }
+    // }
 }
 
 [[nodiscard]] Spheroid Spheroid::getPerturbedCell() const {

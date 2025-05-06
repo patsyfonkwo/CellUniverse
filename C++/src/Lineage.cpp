@@ -219,6 +219,8 @@ void Lineage::saveImages(int frameIndex)
     std::vector<Image> realImages = frames[frameIndex].generateOutputFrame();
     std::vector<Image> synthImages = frames[frameIndex].generateOutputSynthFrame();
     std::cout << "Saving images for frame " << frameIndex << "..." << std::endl;
+    std::cout << "Real Image Type: " << realImages[frameIndex].type() << std::endl;
+    std::cout << "Synth Image Type: " << synthImages[frameIndex].type() << std::endl;
 
     std::string realOutputPath = outputPath + "/real/" + std::to_string(frameIndex);
     if (!std::filesystem::exists(realOutputPath))
