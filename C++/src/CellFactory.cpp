@@ -38,6 +38,7 @@ std::map<Path, std::vector<Spheroid>> CellFactory::createCells(const Path &init_
         z = std::stof(floatStr);
         std::getline(ss, floatStr, ',');
         majorRadius = std::stof(floatStr);
+        std::getline(ss, floatStr, ',');
         minorRadius = std::stof(floatStr);
         z -= z_offset;
         z *= z_scaling;
