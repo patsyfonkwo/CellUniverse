@@ -43,6 +43,11 @@ std::map<Path, std::vector<Spheroid>> CellFactory::createCells(const Path &init_
         z -= z_offset;
         z *= z_scaling;
         Spheroid::paramClass = SpheroidParams(cellName, x, y, z, majorRadius, minorRadius);
+        // std::cout << "One new cell added!" << std::endl;
+        // std::cout << "Input Major : " << majorRadius << std::endl;
+        // std::cout << "Input Minor : " << minorRadius << std::endl;
+        // std::cout << "Output Major : " << Spheroid::paramClass.majorRadius << std::endl;
+        // std::cout << "Output Minor : " << Spheroid::paramClass.minorRadius << std::endl;
         initialCells[filePath].push_back(Spheroid(Spheroid::paramClass));
         continue;
     }

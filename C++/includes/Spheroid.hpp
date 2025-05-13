@@ -32,7 +32,7 @@ public:
 
     SpheroidParams() : CellParams(""), x(0), y(0), z(0), majorRadius(0), minorRadius(0) {}
     SpheroidParams(const std::string &name, float x, float y, float z, float majorRadius, float minorRadius) 
-        : CellParams(""), x(0), y(0), z(0), majorRadius(0), minorRadius(0) {}
+        : CellParams(""), x(x), y(y), z(z), majorRadius(majorRadius), minorRadius(majorRadius) {}
     SpheroidParams(const std::string &name, float x, float y, float z, std::vector<float> _x_vec, std::vector<float> _y_vec, std::vector<float> _z_vec)
         : CellParams(name), x(x), y(y), z(z), x_vec(_x_vec), y_vec(_y_vec), z_vec(_z_vec)
         {

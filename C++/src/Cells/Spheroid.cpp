@@ -130,6 +130,10 @@ Spheroid::Spheroid(const SpheroidParams &init_props)
 : _name(init_props.name), _position{init_props.x, init_props.y, init_props.z},
           _major_radius(init_props.majorRadius), _minor_radius(init_props.majorRadius), _rotation(0), dormant(false)
 {
+    // std::cout << "Major : " << _major_radius << std::endl;
+    // std::cout << "Minor : " << _minor_radius << std::endl;
+    // std::cout << "Init Props Major : " << init_props.majorRadius << std::endl;
+    // std::cout << "Init Props Minor : " << init_props.minorRadius << std::endl;
     this->a = this->_major_radius; // major-radius could also be average of both vector magnitudess
     this->b = this->a; // _get_magnitude(_y_vec); // process directly
     this->c = this->_minor_radius;
@@ -255,7 +259,7 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
 
     if ((currentShape[2] < 0) || (currentShape[3] < 0) || (currentShape[2] >= 517) || (currentShape[3] >= 422))
     {
-        std::cout << "cell not in frame" << std::endl; // this doesn't execute
+        // std::cout << "cell not in frame" << std::endl; // this doesn't execute
         return; // x and y values not on the piture
     }
 
