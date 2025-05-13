@@ -1,5 +1,20 @@
 #include "../includes/Frame.hpp"
 
+// Function to interpolate between two slices
+void interpolateSlices(const cv::Mat& slice1, const cv::Mat& slice2, 
+                       std::vector<cv::Mat>& processedSlices, int numInterpolations) {
+    // Ensure the two slices have the same size and type
+    if (slice1.size() != slice2.size() || slice1.type() != slice2.type()) {
+        throw std::invalid_argument("Slices must have the same size and type for interpolation!");
+    }
+
+    // Perform interpolation
+    for (int i = 1; i <= numInterpolations; ++i) {
+        double t = static_cast<double>(i) / (numInterpolations + 1);
+        cv::Mat interpolatedSlice = (1.0 - t) * slice1 + t * slice2;
+        processedSlices.push_back(interpolatedSlice);
+    }
+}
 
 Frame::Frame(const std::vector<cv::Mat> &realFrame, const SimulationConfig &simulationConfig, const std::vector<Spheroid> &cells,
              const Path &outputPath, const std::string &imageName)

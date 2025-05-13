@@ -54,29 +54,59 @@ Image processImage(const Image &image, const BaseConfig &config)
 
 std::vector<cv::Mat> loadFrame(const std::string &imageFile, const BaseConfig &config)
 {
-    std::vector<cv::Mat> imgs;
+    std::vector<cv::Mat> processedZSlices; // vector of matrices, each matrix is a 2D image
+    std::vector<cv::Mat> interpolatedZSlices;
+
     // Get the file extension
     std::string extension = imageFile.substr(imageFile.find_last_of('.') + 1);
     if (extension == "tiff" || extension == "tif")
     {
-        std::vector<cv::Mat> rawImages;
-        cv::imreadmulti(imageFile, rawImages, cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
-        cv::Mat img = rawImages[0];
+        std::vector<cv::Mat> tiffImage;
+        cv::imreadmulti(imageFile, tiffImage, cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
+        long unsigned numTiffSlices {tiffImage.size()};
+	    assert(numTiffSlices == 33); // FIXME: just for the Pavak's test files
+        cv::Mat img = tiffImage[0];
+
         if (img.empty())
         {
             std::cout << "Error: Could not read the TIFF image" << std::endl;
-            return imgs;
+            return processedZSlices;
         }
 
-        unsigned slices = rawImages.size();
-
-        for (unsigned i = 0; i < slices; ++i)
+        // Iterate through tiffImage, begin coversion to black and white, blurring
+        for (unsigned i = 0; i < numTiffSlices; ++i) // should we end at == slices?
         {
-            cv::Mat slice = rawImages[i].clone();
+            cv::Mat slice = tiffImage[i].clone();
             cv::cvtColor(slice, slice, cv::COLOR_BGR2GRAY);
             cv::Mat processedImg = processImage(slice, config);
-            imgs.push_back(processedImg);
+            processedZSlices.push_back(processedImg);
         }
+
+        const int expandFactor = config.simulation.z_scaling; 
+        // there will be (expandFactor-1) interpolated slices between each "real" one.
+        // we need one extra at the very top to hold the top "real" z-Slice.
+        unsigned numSynthSlices = expandFactor * (numTiffSlices-1) + 1; // 225 for 33 slices
+
+        // for checking
+        // std::cout << "Number of synthetic slices: " << numSynthSlices << std::endl;
+        
+        // iterate through synthslices and interpolate between each "real" slice
+        for (int synthSlice = 0; synthSlice < numSynthSlices; ++synthSlice) {
+            int tiffSlice = int(synthSlice / expandFactor); // "real" slice index 
+            if(synthSlice % expandFactor == 0) 
+            { // copy the real slice to the synth one, verbatim
+            interpolatedZSlices.push_back(processedZSlices[tiffSlice]);
+            } 
+            else if (synthSlice % expandFactor == 1) {
+                // Interpolate between realTiff[tiffSlice] and realTiff[tiffSlice + 1]
+                interpolateSlices(processedZSlices[tiffSlice], 
+                                processedZSlices[tiffSlice + 1], 
+                                interpolatedZSlices, 
+                                expandFactor - 1);
+            }
+        }
+        // here do one FINAL copy of the very top tiff [number 32] to the very top interp [225, not 224!]
+        // interpolatedZSlices.push_back(processedZSlices[32]);
     }
     else
     {
@@ -85,7 +115,7 @@ std::vector<cv::Mat> loadFrame(const std::string &imageFile, const BaseConfig &c
         if (img.empty())
         {
             std::cout << "Error: Could not read the image" << std::endl;
-            return imgs;
+            return processedZSlices;
         }
 
         if (img.channels() == 3)
@@ -93,11 +123,17 @@ std::vector<cv::Mat> loadFrame(const std::string &imageFile, const BaseConfig &c
             cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
         }
 
-        imgs.push_back(processImage(img, config));
+        processedZSlices.push_back(processImage(img, config));
     }
-    //    std::cout << "The size of the imgs is " << imgs.size() << std::endl;
-    return imgs;
+    if (interpolatedZSlices.size() != 225) {
+        std::string errorMessage = "interpolatedZSlices must have exactly 255 slices, but has " +
+                                std::to_string(interpolatedZSlices.size()) + " slices";
+        throw std::runtime_error(errorMessage);
+    }
+    std::cout << std::to_string(interpolatedZSlices.size()) << "slices built successfully" << std::endl;
+    return interpolatedZSlices;
 }
+
 
 Lineage::Lineage(std::map<std::string, std::vector<Spheroid>> initialCells, PathVec imagePaths, BaseConfig &config, std::string outputPath, int continueFrom)
     : config(config), outputPath(outputPath)

@@ -280,12 +280,16 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
     // std::cout << "YPOS : " << ypos << std::endl;
     // std::cout << "ZPOS : " << zpos << std::endl;
 
+    // xpos = 0;
+    // ypos = 0;
+    // zpos = 0;
+
     // int matrix_offset = get_matrix_size() / 2;
     
     for (int i=0; (i+xpos < image.cols); ++i){
         for (int j=0; (j+ypos < image.rows); ++j){
             if (paintPixelUpright(i-xpos, j-ypos, z - zpos)){
-                std::cout << "should paint : " << "(" << j+ypos << ", " << i+xpos << ", " << z << ")" << std::endl;
+                // std::cout << "should paint : " << "(" << j+ypos << ", " << i+xpos << ", " << z << ")" << std::endl;
                 // image.at<cv::Vec3b>(i+x_offset, j+y_offset) = cv::Vec3b(255, 255, 255);
                 image.at<float>(j+ypos, i+xpos) = simulationConfig.cell_color; 
             }
