@@ -130,6 +130,10 @@ Spheroid::Spheroid(const SpheroidParams &init_props)
 : _name(init_props.name), _position{init_props.x, init_props.y, init_props.z},
           _major_radius(init_props.majorRadius), _minor_radius(init_props.majorRadius), _rotation(0), dormant(false)
 {
+    // std::cout << "NAME : " << _name << std::endl;
+    // std::cout << "XPOS : " << _position.x << std::endl;
+    // std::cout << "YPOS : " << _position.y << std::endl;
+    // std::cout << "ZPOS : " << _position.z << std::endl;
     // std::cout << "Major : " << _major_radius << std::endl;
     // std::cout << "Minor : " << _minor_radius << std::endl;
     // std::cout << "Init Props Major : " << init_props.majorRadius << std::endl;
@@ -146,6 +150,9 @@ Spheroid::Spheroid(const SpheroidParams &init_props)
     std::vector<float> xyz = {std::ceil(2 * a), std::ceil(2 * b), std::ceil(2 * c)};
 
     int matrix_size = *std::max_element(xyz.begin(), xyz.end()) + 10 ; // 10 pixel padding
+    // std::cout << "matrix_size : " << matrix_size << std::endl; 
+    // std::cout << "_major_radius : " << _major_radius << std::endl; 
+    // std::cout << "_minor_radius : " << _minor_radius << std::endl; 
 
     std::vector<std::vector<std::vector<int>>> matrix(matrix_size, std::vector<std::vector<int>>(matrix_size, std::vector<int>(matrix_size, 0)));
     for (int i=0; i < matrix_size; ++i){
@@ -163,7 +170,7 @@ Spheroid::Spheroid(const SpheroidParams &init_props)
     this->matrix = matrix;
 
 // print rotated matrix
-    this->rotated_matrix = _rotate_matrix(matrix);
+    // this->rotated_matrix = _rotate_matrix(matrix);
     // for (int i=0; i < rotated_matrix.size(); ++i){
     //     for (int j=0; j < rotated_matrix.size(); ++j){
     //         for (int k=0; k < rotated_matrix.size(); ++k){
@@ -264,21 +271,23 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
     }
 
     // paint rotated pixels onto the z slice 1 by 1
-    int x_offset = get_center().x;
-    int y_offset = get_center().y;
-    int z_offset = get_center().z;
+    int xpos = get_center().x;
+    int ypos = get_center().y;
+    int zpos = get_center().z;
 
-    x_offset = 0;
-    y_offset = 0;
-    z_offset = 0;
+    // std::cout << "NAME : " << _name << std::endl;
+    // std::cout << "XPOS : " << xpos << std::endl;
+    // std::cout << "YPOS : " << ypos << std::endl;
+    // std::cout << "ZPOS : " << zpos << std::endl;
 
     // int matrix_offset = get_matrix_size() / 2;
     
-    for (int i=0; (i+x_offset < image.cols); ++i){
-        for (int j=0; (j+y_offset < image.rows); ++j){
-            if (paintPixelUpright(i-x_offset, j-y_offset, (int)z - z_offset)){
+    for (int i=0; (i+xpos < image.cols); ++i){
+        for (int j=0; (j+ypos < image.rows); ++j){
+            if (paintPixelUpright(i-xpos, j-ypos, z - zpos)){
+                std::cout << "should paint : " << "(" << j+ypos << ", " << i+xpos << ", " << z << ")" << std::endl;
                 // image.at<cv::Vec3b>(i+x_offset, j+y_offset) = cv::Vec3b(255, 255, 255);
-                image.at<float>(j+y_offset, i+x_offset) = simulationConfig.cell_color; 
+                image.at<float>(j+ypos, i+xpos) = simulationConfig.cell_color; 
             }
             // image.at<float>(j+y_offset, i+x_offset) = 0.0f; // simulationConfig.cell_color;
         }
