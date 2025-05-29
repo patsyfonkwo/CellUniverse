@@ -21,6 +21,7 @@ std::map<Path, std::vector<Spheroid>> CellFactory::createCells(const Path &init_
     std::string firstLine;
     std::getline(file, firstLine); // remove the header
     std::map<Path, std::vector<Spheroid>> initialCells;
+    int line_cnt = 0;
     while (std::getline(file, line)) {
         std::istringstream ss(line);
         float x, y, z, majorRadius, minorRadius;
@@ -42,14 +43,16 @@ std::map<Path, std::vector<Spheroid>> CellFactory::createCells(const Path &init_
         minorRadius = std::stof(floatStr);
         z -= z_offset;
         z *= z_scaling;
-        Spheroid::paramClass = SpheroidParams(cellName, x, y, z, majorRadius, minorRadius);
         // std::cout << "One new cell added!" << std::endl;
         // std::cout << "Input Major : " << majorRadius << std::endl;
         // std::cout << "Input Minor : " << minorRadius << std::endl;
         // std::cout << "Output Major : " << Spheroid::paramClass.majorRadius << std::endl;
         // std::cout << "Output Minor : " << Spheroid::paramClass.minorRadius << std::endl;
-        initialCells[filePath].push_back(Spheroid(Spheroid::paramClass));
+        initialCells[filePath].push_back(Spheroid(SpheroidParams(cellName, x, y, z, majorRadius, minorRadius)));
+        ++line_cnt;
         continue;
     }
+    std::cout << "Input Line Count : " << line_cnt << std::endl;
+    std::cout << "initCells Size : " << initialCells["frame001.tif"].size() << std::endl;
     return initialCells;
 }

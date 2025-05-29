@@ -142,6 +142,8 @@ Lineage::Lineage(std::map<std::string, std::vector<Spheroid>> initialCells, Path
     {
         std::vector<Image> real_frame;
         real_frame = loadFrame(imagePaths[i], config);
+        // loadFrame interpolate frames, update to config is needed
+        config.simulation.z_slices = real_frame.size();
 
         fs::path path(imagePaths[i]);
         //        std::cout << "Filename: " << path.filename() << std::endl;

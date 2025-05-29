@@ -62,14 +62,27 @@ std::vector<cv::Mat> Frame::generateSynthFrame()
     cv::Size shape = getImageShape(); // Assuming getImageShape returns a cv::Size
     std::vector<cv::Mat> frame;
 
+    unsigned int x = 0;
+    // std::cout << "Num of Cells to draw : " << cells.size() << std::endl;
     for (double z : z_slices)
     {
         Image synthImage = cv::Mat(shape, CV_32F, cv::Scalar(simulationConfig.background_color)); // Assuming background color is in cv::Scalar format
-
         for (const auto &cell : cells)
         {
+            cell.printCellInfo();
+            // cell.print();
             cell.draw(synthImage, simulationConfig, nullptr, z);
         }
+        // if(!frame.empty() && x > 0)
+        // {
+        //     unsigned num_interpolated_slices = 7;
+        //     std::vector<cv::Mat> interSlices{interpolateSlices(frame.front(), synthImage, num_interpolated_slices)};
+        //     for (unsigned i = 0; i < num_interpolated_slices; ++i)
+        //     {
+        //         frame.push_back(interSlices[i]);
+        //     }
+        // }
+        x += 1;
         frame.push_back(synthImage);
     }
     return frame;

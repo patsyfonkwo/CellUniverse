@@ -210,7 +210,7 @@ cv::Point3f Spheroid::get_center() const {
     return _position; // x, y, z position
 }
 
-void Spheroid::print(){
+void Spheroid::print() const {
     for (int i=0; i < this->matrix.size(); ++i){
         for (int j=0; j < this->matrix.size(); ++j){
             for (int k=0; k < this->matrix.size(); ++k){
@@ -266,67 +266,28 @@ void Spheroid::draw(cv::Mat &image, SimulationConfig simulationConfig, cv::Mat *
 
     if ((currentShape[2] < 0) || (currentShape[3] < 0) || (currentShape[2] >= 517) || (currentShape[3] >= 422))
     {
-        // std::cout << "cell not in frame" << std::endl; // this doesn't execute
+        std::cout << "cell not in frame" << std::endl; // this doesn't execute
         return; // x and y values not on the piture
     }
 
-    // paint rotated pixels onto the z slice 1 by 1
-    int xpos = get_center().x;
-    int ypos = get_center().y;
-    int zpos = get_center().z;
-
-    // std::cout << "NAME : " << _name << std::endl;
-    // std::cout << "XPOS : " << xpos << std::endl;
-    // std::cout << "YPOS : " << ypos << std::endl;
-    // std::cout << "ZPOS : " << zpos << std::endl;
-
-    // xpos = 0;
-    // ypos = 0;
-    // zpos = 0;
 
     // int matrix_offset = get_matrix_size() / 2;
-    
-    for (int i=0; (i+xpos < image.cols); ++i){
-        for (int j=0; (j+ypos < image.rows); ++j){
-            if (paintPixelUpright(i-xpos, j-ypos, z - zpos)){
+    // ((i-_position.x >= 0) && (j-_position.y >= 0))
+    bool printed = false;
+    for (int i=0; (i < image.cols); ++i){
+        for (int j=0; (j < image.rows); ++j){
+            if (paintPixelUpright(i-_position.x, j-_position.y, z-_position.z)){
                 // std::cout << "should paint : " << "(" << j+ypos << ", " << i+xpos << ", " << z << ")" << std::endl;
                 // image.at<cv::Vec3b>(i+x_offset, j+y_offset) = cv::Vec3b(255, 255, 255);
-                image.at<float>(j+ypos, i+xpos) = simulationConfig.cell_color; 
+                image.at<float>(j, i) = simulationConfig.cell_color; 
+                // if (!printed){
+                //     std::cout << "Painting Cell at z level " << z << "..." << std::endl;
+                //     printed = true;
+                // }
             }
-            // image.at<float>(j+y_offset, i+x_offset) = 0.0f; // simulationConfig.cell_color;
         }
     }
-    // if (image.empty())
-    //     std::cout << "empty" << std::endl;
-    // std::cout << "Image Columns: " << image.cols << std::endl;
-    // std::cout << "Image Rows: " << image.rows << std::endl;
-    // std::cout << "Image Size: " << image.size() << std::endl;
-
-    // for (int i=0; (i < image.rows); ++i){
-    //     for (int j=0; (j < image.cols); ++j){
-    //         image.at<float>(i, j) = 0.0f;
-    //     }
-    // }
-
-    // // float background_color = simulationConfig.background_color;
-    // // float cell_color = simulationConfig.cell_color;
-
-    // // cv::Point center(_position.x, _position.y);
-    // // cv::circle(image, center, static_cast<int>(currentRadius), cv::Scalar(cell_color), -1);
-    // // Define ellipse parameters
-
-    // cv::Point center(currentShape[2], currentShape[2]);
-    // cv::Size axes(currentRadii.first, currentRadii.second); // major and minor axes
-    // double angle = 45.0;
-
-    // double startAngle = 0.0;
-    // double endAngle = 360.0;
-
-    // cv::Scalar color(255, 255, 255); // White color
-    // int thickness = 3;
-    // int lineType = cv::LINE_AA;
-
-    // cv::ellipse(image, center, axes, angle, startAngle, endAngle, color, thickness, lineType);
+    
 }
 
 void Spheroid::drawOutline(cv::Mat &image, float color, float z) const {

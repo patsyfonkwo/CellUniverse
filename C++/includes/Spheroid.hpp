@@ -32,7 +32,7 @@ public:
 
     SpheroidParams() : CellParams(""), x(0), y(0), z(0), majorRadius(0), minorRadius(0) {}
     SpheroidParams(const std::string &name, float x, float y, float z, float majorRadius, float minorRadius) 
-        : CellParams(""), x(x), y(y), z(z), majorRadius(majorRadius), minorRadius(majorRadius) {}
+        : CellParams(name), x(x), y(y), z(z), majorRadius(majorRadius), minorRadius(minorRadius) {}
     SpheroidParams(const std::string &name, float x, float y, float z, std::vector<float> _x_vec, std::vector<float> _y_vec, std::vector<float> _z_vec)
         : CellParams(name), x(x), y(y), z(z), x_vec(_x_vec), y_vec(_y_vec), z_vec(_z_vec)
         {
@@ -95,7 +95,7 @@ class Spheroid
         
         Spheroid() : _major_radius(0), _minor_radius(0), _rotation(0), dormant(false) {}
 
-        void printCellInfo() {
+        void printCellInfo() const {
             std::cout << "Sphere name: " << _name << " x: " << _position.x << " y: " << _position.y << " z: " << _position.z << " majorRadius: " << _major_radius << " minorRadius: " << _minor_radius << " isDormant: " << dormant << std::endl;
         }
 
@@ -136,7 +136,7 @@ class Spheroid
 
         cv::Point3f get_center() const;
 
-        void print();
+        void print() const;
 
         bool paintPixelUpright(int i, int j, int k) const ;
 
